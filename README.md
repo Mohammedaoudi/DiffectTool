@@ -44,28 +44,22 @@ python diffect.py -p path1 path2
 ## 🖼️ Screenshots
 
 ### Initial View
-<div align="center">
 
 ![Initial Interface](https://github.com/user-attachments/assets/a4f3398e-f04d-4e06-9480-d0fc7726ea95)
 
 
-</div>
 
 
 ### Directory Comparison
-    <div align="center">
 
 
     ![Directory Comparison](https://github.com/user-attachments/assets/e92eb4a2-ac07-4cf6-b741-7264c21d1283)
 
-    </div>
 ### Text Comparison
-    <div align="center">
 
 ![Text Comparison](https://github.com/user-attachments/assets/362aeda8-27ef-4f31-aff6-7c784d065186)
 
 
-    </div>
 ## 🔧 Technical Details
 
 Built using:
