@@ -2,7 +2,6 @@
 
 A powerful Python-based GUI tool for detecting and visualizing differences between directories and files. Built with Tkinter and Python's difflib, this tool provides an intuitive interface for comparing content and structure.
 
-![Directory Structure Comparison](screenshots/directory-compare.png)
 
 ## ✨ Features
 
@@ -45,14 +44,28 @@ python diffect.py -p path1 path2
 ## 🖼️ Screenshots
 
 ### Initial View
-![Initial Interface](screenshots/initial-view.png)
+<div align="center">
+
+![Initial Interface](https://github.com/user-attachments/assets/a4f3398e-f04d-4e06-9480-d0fc7726ea95)
+
+
+</div>
+
 
 ### Directory Comparison
-![Directory Comparison](screenshots/directory-compare.png)
+<div align="center">
 
+
+![Directory Comparison](https://github.com/user-attachments/assets/e92eb4a2-ac07-4cf6-b741-7264c21d1283)
+
+</div>
 ### Text Comparison
-![Text Comparison](screenshots/text-compare.png)
+<div align="center">
 
+![Text Comparison](https://github.com/user-attachments/assets/362aeda8-27ef-4f31-aff6-7c784d065186)
+
+
+</div>
 ## 🔧 Technical Details
 
 Built using:
