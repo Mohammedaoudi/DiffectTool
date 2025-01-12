@@ -52,8 +52,7 @@ python diffect.py -p path1 path2
 
 ### Directory Comparison
 
-
-    ![Directory Comparison](https://github.com/user-attachments/assets/e92eb4a2-ac07-4cf6-b741-7264c21d1283)
+![Directory Comparison](https://github.com/user-attachments/assets/e92eb4a2-ac07-4cf6-b741-7264c21d1283)
 
 ### Text Comparison
 
