@@ -1,43 +1,30 @@
-"""
-MIT License
-
-Copyright (c) 2016 Yasser Elsayed
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
-
-import os, mimetypes, filecmp
+import os, filecmp
 from difflibparser.difflibparser import *
 from ui.mainwindow_ui import MainWindowUI
-try:    # for Python2
-    from Tkinter import *
-    from tkFileDialog import askopenfilename, askdirectory
-    from tkSimpleDialog import askstring
-except ImportError:    # for Python3
-    from tkinter import *
-    from tkinter.filedialog import askopenfilename, askdirectory
-    from tkinter.simpledialog import askstring
+from docx import Document
+import zipfile
+import time
+import pdfplumber #import fitz , fitz can be used to extract text from pdfs
+
+
+
+from tkinter import *
+from tkinter.filedialog import askopenfilename, askdirectory
+from tkinter.simpledialog import askstring
+
+def unzip_all(directory):
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if file.endswith('.zip'):
+                    file_path = os.path.join(root, file)
+                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                        zip_ref.extractall(root)
+
 
 class MainWindow:
     def start(self, leftpath = None, rightpath = None):
         self.main_window = Tk()
-        self.main_window.title('Pydiff')
+        self.main_window.title('difference detection')
         self.__main_window_ui = MainWindowUI(self.main_window)
 
         self.leftFile = ''
@@ -62,7 +49,7 @@ class MainWindow:
             {'separator'},
             {'name': 'Cut', 'command': self.__cut, 'accelerator': 'Ctrl+X'},
             {'name': 'Copy', 'command': self.__copy, 'accelerator': 'Ctrl+C'},
-            {'name': 'Paste', 'command': self.__paste, 'accelerator': 'Ctrl+P'},
+            {'name': 'Paste', 'command': self.__paste, 'accelerator': 'Ctrl+V'},
             {'separator'},
             {'name': 'Go To Line', 'command': self.__goToLine, 'accelerator': 'Ctrl+G'}
             ])
@@ -106,60 +93,272 @@ class MainWindow:
             self.__main_window_ui.fileTreeXScrollbar.grid()
             self.__main_window_ui.fileTreeView.delete(*self.__main_window_ui.fileTreeView.get_children())
             self.__browse_process_directory('', leftDir, rightDir)
+    
+        
+    def __convert_pdf_to_txt(self, pdf_file, output_file):
+        with pdfplumber.open(pdf_file) as pdf:
+            with open(output_file, 'w') as f:
+                for page in pdf.pages:
+                    # Extract text 
+                    text = page.extract_text()
+                    if text:
+                        f.write(text.strip() + '\n')
+                    else:
+                        f.write("Empty PDF page")
 
-    # Recursive method to fill the treevie with given directory hierarchy
+                    # Extract table 
+                    tables = page.extract_tables()
+                    for table in tables:
+                        f.write('\n' + '-' * 100 + '\n')  
+
+                        # Determine the number of columns
+                        num_columns = max(len(row) for row in table)
+
+                        # Process each row
+                        for row in table:
+                            row_data = [''] * num_columns
+                            for i, cell in enumerate(row):
+                                
+                                cell_content = (cell or '').replace('\n', ' ').strip()
+
+                                if i < num_columns:
+                                    row_data[i] = cell_content
+
+                            
+                            formatted_row = ' | '.join(cell.ljust(20) for cell in row_data)
+                            f.write(formatted_row + '\n')
+
+                        f.write('-' * 100 + '\n')  
+
+                    f.write('\n')
+
+
+    
+    """
+    
+    def __convert_docx_to_txt(self, docx_file, output_file):
+        doc = Document(docx_file)
+
+        with open(output_file, 'w') as f:
+            if doc.paragraphs:
+                for para in doc.paragraphs:
+                    if para.text.strip():
+                        f.write(para.text + '\n')
+            else:
+                f.write("Empty DOCX file\n")
+
+            if doc.tables:
+                for table in doc.tables:
+                    num_columns = max(len(row.cells) for row in table.rows)
+                    table_width = num_columns * 17  
+                    separator_line = '-' * table_width
+
+                    f.write(separator_line + '\n')  
+                    for row_idx, row in enumerate(table.rows):
+                        row_data = [''] * num_columns  
+                        for col_idx, cell in enumerate(row.cells):
+                            cell_text = cell.text.replace('\n', ' ')
+                            top = cell._tc.top
+                            bottom = cell._tc.bottom
+                            left = cell._tc.left
+                            right = cell._tc.right
+
+                            if top == row_idx and left == col_idx:
+                                span = (right - left) * 15
+                                cell_text = f'{cell_text:<{span}}'
+                                row_data[left] = cell_text 
+                            elif top == row_idx:
+                                row_data[left] = ''  
+
+                        formatted_row = ' | '.join(row_data)
+                        f.write(formatted_row + '\n')
+                        if row_idx == len(table.rows) - 1 or table.rows[row_idx + 1].cells[col_idx]._tc.top != row_idx:
+                            f.write(separator_line + '\n')  
+
+                    f.write('\n')
+                    
+   """ 
+    
+    def __convert_docx_to_txt(self, docx_file, output_file):
+        doc = Document(docx_file)
+
+        def write_paragraph(paragraph, file):
+            if paragraph.text.strip():
+                file.write(paragraph.text + '\n')
+
+        def write_table(table, file):
+            num_columns = max(len(row.cells) for row in table.rows)
+            cell_width = 20  
+            separator_line = '-' * (num_columns * cell_width + (num_columns - 1) * 3)
+
+
+            # Add a line before each table
+            file.write(separator_line + '\n') 
+
+            for row in table.rows:
+                row_data = []
+                for cell in row.cells:
+                    cell_text = cell.text.replace('\n', ' ').strip()
+                    row_data.append(cell_text.ljust(cell_width))
+
+                file.write(' | '.join(row_data) + '\n')
+
+            # Add a line after each table
+            file.write(separator_line + '\n')  
+
+        with open(output_file, 'w') as f:
+            paragraph_idx = 0
+            table_idx = 0
+
+            for element in doc.element.body:
+
+                # extract text
+                if element.tag.endswith('p'):  
+                    paragraph = doc.paragraphs[paragraph_idx]
+                    write_paragraph(paragraph, f)
+                    paragraph_idx += 1
+
+
+                # extract table
+                elif element.tag.endswith('tbl'):  
+                    table = doc.tables[table_idx]
+                    write_table(table, f)
+                    table_idx += 1
+
+            if paragraph_idx == 0 and table_idx == 0:
+                f.write("Empty DOCX file")
+
+
     def __browse_process_directory(self, parent, leftPath, rightPath):
+        unzip_all(leftPath)
+        unzip_all(rightPath)
+       
         if parent == '':
             leftPath = leftPath.rstrip('/')
             rightPath = rightPath.rstrip('/')
             leftDirName = os.path.basename(leftPath)
             rightDirName = os.path.basename(rightPath)
             self.__main_window_ui.fileTreeView.heading('#0', text=leftDirName + ' / ' + rightDirName, anchor=W)
+       
+        conversions_complete = False
+        
+        
+        while not conversions_complete:
+            leftListing = os.listdir(leftPath)
+            rightListing = os.listdir(rightPath)
+            mergedListing = list(set(leftListing) | set(rightListing))
+            painted = FALSE
+            total_conversions_docx = sum(1 for l in mergedListing if l.endswith('.docx'))
+            total_conversions_pdf = sum(1 for l in mergedListing if l.endswith('.pdf'))
+            num_conversions_docx = 0
+            num_conversions_pdf = 0
+    
+            
+            for l in mergedListing:
+                newLeftPath = os.path.join(leftPath, l)
+                newRightPath = os.path.join(rightPath, l)
+                
+                if l.endswith('.docx'):
+                    num_conversions_docx += 1
+                    if l in leftListing:
+                        txt_file = os.path.splitext(l)[0] + '_docx_converted.txt'
+                        output_path = os.path.join(leftPath, txt_file)
+                        self.__convert_docx_to_txt(newLeftPath, output_path)
+                    if l in rightListing:
+                        txt_file = os.path.splitext(l)[0] + '_docx_converted.txt'
+                        output_path = os.path.join(rightPath, txt_file)
+                        self.__convert_docx_to_txt(newRightPath, output_path)
+                
+
+                if l.endswith('.pdf'):
+                            num_conversions_pdf += 1
+                            if l in leftListing:
+                                txt_file = os.path.splitext(l)[0] + '_pdf_converted.txt'
+                                output_path = os.path.join(leftPath, txt_file)
+                                self.__convert_pdf_to_txt(newLeftPath, output_path)
+                            if l in rightListing:
+                                txt_file = os.path.splitext(l)[0] + '_pdf_converted.txt'
+                                output_path = os.path.join(rightPath, txt_file)
+                                self.__convert_pdf_to_txt(newRightPath, output_path)
+
+
+            if num_conversions_docx == total_conversions_docx and num_conversions_pdf == total_conversions_pdf:
+                conversions_complete = True
+            else:
+                time.sleep(0.1)
+
         leftListing = os.listdir(leftPath)
         rightListing = os.listdir(rightPath)
         mergedListing = list(set(leftListing) | set(rightListing))
-        painted = FALSE
+        
         for l in mergedListing:
+            
             newLeftPath = leftPath + '/' + l
             newRightPath = rightPath + '/' + l
             bindValue = (newLeftPath, newRightPath)
-            # Item in left dir only
-            if l in leftListing and l not in rightListing:
-                self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('red','simple'))
-                painted = TRUE
-            # Item in right dir only
-            elif l in rightListing and l not in leftListing:
-                self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('green','simple'))
-                painted = TRUE
-            # Item in both dirs
-            else:
-                # If one of the diffed items is a file and the other is a directory, show in yellow indicating a difference
-                if (not os.path.isdir(newLeftPath) and os.path.isdir(newRightPath)) or (os.path.isdir(newLeftPath) and not os.path.isdir(newRightPath)):
-                    self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('yellow','simple'))
+           
+            if not (l.endswith('docx') or l.endswith('zip') or l.endswith('pdf') or l.endswith('svn')) :
+                # Item in left dir only
+                if l in leftListing and l not in rightListing:
+                    self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('red','simple'))
                     painted = TRUE
+                # Item in right dir only
+                elif l in rightListing and l not in leftListing:
+                    self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('green','simple'))
+                    painted = TRUE
+                # Item in both dirs
                 else:
-                    # If both are directories, show in white and recurse on contents
-                    if os.path.isdir(newLeftPath) and os.path.isdir(newRightPath):
-                        oid = self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, open=False)
-                        painted = self.__browse_process_directory(oid, newLeftPath, newRightPath)
-                        if painted:
-                            self.__main_window_ui.fileTreeView.item(oid, tags=('purpleLight', 'simple'))
+                    # If one of the diffed items is a file and the other is a directory, show in yellow indicating a difference
+                    if (not os.path.isdir(newLeftPath) and os.path.isdir(newRightPath)) or (os.path.isdir(newLeftPath) and not os.path.isdir(newRightPath)):
+                        self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('yellow','simple'))
+                        painted = TRUE
                     else:
-                        # Both are files. diff the two files to either show them in white or yellow
-                        if (filecmp.cmp(newLeftPath, newRightPath)):
-                            oid = self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('simple'))
+                        # If both are directories, show in white and recurse on contents
+                        if os.path.isdir(newLeftPath) and os.path.isdir(newRightPath):
+                            oid = self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, open=False)
+                            painted = self.__browse_process_directory(oid, newLeftPath, newRightPath)
+                            if painted:
+                                self.__main_window_ui.fileTreeView.item(oid, tags=('purpleLight', 'simple'))
                         else:
-                            oid = self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('yellow','simple'))
-                            painted = TRUE
+                            # Both are files. diff the two files to either show them in white or yellow
+                            if (filecmp.cmp(newLeftPath, newRightPath)):
+                                oid = self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('simple'))
+                            else:
+                                oid = self.__main_window_ui.fileTreeView.insert(parent, 'end', text=l, value=bindValue, open=False, tags=('yellow','simple'))
+                                painted = TRUE
         return painted
+
+
+
+    
 
     def __load_file(self, pos):
         fname = askopenfilename()
         if fname:
-            if pos == 'left':
-                self.leftFile = fname
+            if fname.endswith('.docx'):
+            
+                txt_file = os.path.splitext(fname)[0] + '_docx_converted.txt'
+                self.__convert_docx_to_txt(fname, txt_file)
+                if pos == 'left':
+                    self.leftFile = txt_file
+                else:
+                    self.rightFile = txt_file
+
+            elif fname.endswith('.pdf'):
+            
+                txt_file = os.path.splitext(fname)[0] + '_pdf_converted.txt'
+                self.__convert_pdf_to_txt(fname, txt_file)
+                if pos == 'left':
+                    self.leftFile = txt_file
+                else:
+                    self.rightFile = txt_file
+
             else:
-                self.rightFile = fname
+                # Load TXT file
+                if pos == 'left':
+                    self.leftFile = fname
+                else:
+                    self.rightFile = fname
             return fname
         else:
             return None

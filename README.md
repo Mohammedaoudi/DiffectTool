@@ -1,34 +1,71 @@
-# pydiff - A Minimalistic Difflib GUI
-An open source Tkinter GUI for python's difflib comparing two text files or two directory trees, complete with highlighting of differences and line numbers.
+# DiffectTool
 
-<p align="center">
-  <img src="https://github.com/yebrahim/python-difflib-gui/blob/master/screenshot.png" width="90%"/>
-</p>
+A powerful Python-based GUI tool for detecting and visualizing differences between directories and files. Built with Tkinter and Python's difflib, this tool provides an intuitive interface for comparing content and structure.
 
-You can open File -> Compare Files to diff two text files, or choose File -> Compare Directories to diff directories. In the case of directories, the tool will show the directory structure in a tree sidebar to the left, and highlight files red if they're in left directory only, green if in the right one only, yellow if in both with changes, and white if in both with no changes.
+![Directory Structure Comparison](screenshots/directory-compare.png)
 
-The tool makes use of [this parser](https://github.com/yebrahim/difflibparser) that I wrote for python's difflib ndiff output, which converts the text output into diff objects that can be used in code.
+## ✨ Features
 
-## Requirements
-pydiff works with stock Python2.7 and takes only one dependency on `tkinter`, which is built-in on MacOS so it should work out of the box. On Ubuntu, you can get it by running `sudo apt-get install python-tk`.
+- 📁 **Directory Structure Comparison**: View and compare entire directory structures side by side
+- 📄 **File Content Comparison**: Compare text files with highlighted differences
+- 🎨 **Visual Difference Highlighting**: 
+  - Red: Files present only in left directory
+  - Green: Files present only in right directory
+  - Yellow: Files present in both with changes
+  - White: Files present in both with no changes
+- 📝 **Multiple File Format Support**: Compare PDFs, TXT files, and DOCX files
+- 🖥️ **User-Friendly Interface**: Simple and intuitive file selection interface
+- 🚀 **Command Line Support**: Launch with predefined paths using command line arguments
 
-## Install
-You can just clone the repo to your disk, just note that it uses a submodule, so you need to clone recursively:
+## 🛠️ Installation
 
-`git clone --recursive https://github.com/yebrahim/pydiff.git`
+```bash
+# Clone the repository
+git clone https://github.com/Mohammedaoudi/DiffectTool.git
 
-Please open issues if you see any, and feel free to fix and send pull requests.
+# Navigate to the project directory
+cd DiffectTool
+```
 
-## Usage
+## 💻 Usage
 
-`python pydiff.py`
+### GUI Mode
+```bash
+python diffect.py
+```
 
-You can also give it executable permissions and run it directly on unix systems:
+### Command Line Mode
+```bash
+python diffect.py -p path1 path2
+```
 
-`chmod +x pydiff.py`
+### Arguments
+- `-p`, `--paths`: Two paths to compare (optional)
 
-`./pydiff.py`
+## 🖼️ Screenshots
 
-To diff two paths directly (files or directories):
+### Initial View
+![Initial Interface](screenshots/initial-view.png)
 
-`python pydiff.py -p path1 path2`
+### Directory Comparison
+![Directory Comparison](screenshots/directory-compare.png)
+
+### Text Comparison
+![Text Comparison](screenshots/text-compare.png)
+
+## 🔧 Technical Details
+
+Built using:
+- Python
+- Tkinter for GUI
+- difflib for comparison logic
+- argparse for command line argument parsing
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📝 License
+
+[MIT License](LICENSE)
+
